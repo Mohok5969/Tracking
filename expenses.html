@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>All Expenses | Budget Monthly</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" />
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-6">
+
+<!-- Redirect if not logged in -->
+<script type="module">
+  import { getCurrentUser } from './auth.js';
+  if (!getCurrentUser()) window.location.href = "index.html";
+</script>
+
+<!-- Header -->
+<header class="bg-white shadow-sm py-4 px-6 flex justify-between items-center fixed top-0 left-0 w-full z-10">
+  <h1 class="text-2xl font-bold text-gray-800">Bobb Tracker</h1>
+  <nav class="space-x-4 text-blue-600 font-semibold">
+    <a href="home.html" class="hover:text-blue-800"><i class="fas fa-home mr-1"></i>Home</a>
+    <a href="summary.html" class="hover:text-blue-800"><i class="fas fa-chart-pie mr-1"></i>Summary</a>
+    <a href="expenses.html" class="hover:text-blue-800"><i class="fas fa-money-bill-wave mr-1"></i>All Expenses</a>
+    <a href="settings.html" class="hover:text-blue-800"><i class="fas fa-cog mr-1"></i>Settings</a>
+  </nav>
+</header>
+
+<!-- Main Content -->
+<main class="container mx-auto pt-24 max-w-4xl">
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-3xl font-bold text-gray-800">All Your Expenses</h1>
+    <button id="new-expense-btn" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 flex items-center space-x-2">
+      <i class="fas fa-plus"></i><span>New Expense</span>
+    </button>
+  </div>
+
+  <!-- Filters -->
+  <div class="bg-white p-4 rounded-lg shadow mb-6">
+    <h2 class="text-xl font-semibold mb-4 text-gray-700">Filter Expenses</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div>
+        <label for="filter-category" class="block text-gray-700">Category</label>
+        <select id="filter-category" class="w-full border p-2 rounded">
+          <option value="">All Categories</option>
+        </select>
+      </div>
+      <div>
+        <label for="filter-start-date" class="block text-gray-700">Start Date</label>
+        <input type="date" id="filter-start-date" class="w-full border p-2 rounded" />
+      </div>
+      <div>
+        <label for="filter-end-date" class="block text-gray-700">End Date</label>
+        <input type="date" id="filter-end-date" class="w-full border p-2 rounded" />
+      </div>
+    </div>
+    <div class="flex justify-end mt-4 space-x-3">
+      <button id="apply-filter-btn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+        <i class="fas fa-filter mr-2"></i>Apply
+      </button>
+      <button id="clear-filter-btn" class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500">
+        <i class="fas fa-times-circle mr-2"></i>Clear
+      </button>
+    </div>
+  </div>
+
+  <!-- Expense List -->
+  <div id="expense-list-container" class="space-y-4"></div>
+
+  <div id="no-expenses-message" class="text-center text-gray-600 hidden mt-6">
+    <i class="fas fa-info-circle mr-2"></i>No expenses found. Try adjusting filters.
+  </div>
+</main>
+
+<!-- New Expense Modal -->
+<div id="new-expense-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+  <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+    <h2 class="text-2xl font-bold mb-6 text-gray-800">Add New Expense</h2>
+    <div class="space-y-4">
+      <input type="number" id="new-amount" placeholder="Amount ($)" class="w-full border p-2 rounded" min="0" step="0.01" />
+      <select id="new-category" class="w-full border p-2 rounded"></select>
+      <input type="date" id="new-date" class="w-full border p-2 rounded" />
+      <input type="text" id="new-description" placeholder="Description" class="w-full border p-2 rounded" maxlength="100" />
+    </div>
+    <div class="flex justify-end mt-6 space-x-3">
+      <button id="save-new-btn" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Add</button>
+      <button id="cancel-new-btn" class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div id="edit-expense-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+  <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+    <h2 class="text-2xl font-bold mb-6 text-gray-800">Edit Expense</h2>
+    <div class="space-y-4">
+      <input type="number" id="edit-amount" placeholder="Amount ($)" class="w-full border p-2 rounded" min="0" step="0.01" />
+      <select id="edit-category" class="w-full border p-2 rounded"></select>
+      <input type="date" id="edit-date" class="w-full border p-2 rounded" />
+      <input type="text" id="edit-description" placeholder="Description" class="w-full border p-2 rounded" maxlength="100" />
+    </div>
+    <div class="flex justify-end mt-6 space-x-3">
+      <button id="save-edit-btn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Save</button>
+      <button id="cancel-edit-btn" class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="fixed bottom-5 right-5 hidden px-4 py-2 rounded text-white bg-green-600 shadow-lg"></div>
+
+<script type="module">
+  import { getCurrentUser } from './auth.js';
+
+  const user = getCurrentUser();
+  if (!user) {
+    window.location.href = "index.html";
+  }
+
+  const expensesKey = `${user}_expenses`;
+  const categoriesKey = `${user}_categories`;
+
+  // Load data
+  let userExpenses = JSON.parse(localStorage.getItem(expensesKey) || "[]");
+  const userCategories = JSON.parse(localStorage.getItem(categoriesKey) || "[]");
+
+  // Assign unique IDs to expenses missing them
+  userExpenses = userExpenses.map((e, i) => {
+    if (!e.id) e.id = `${Date.now()}-${i}`;
+    return e;
+  });
+
+  // Elements
+  const filterCategory = document.getElementById("filter-category");
+  const startDateInput = document.getElementById("filter-start-date");
+  const endDateInput = document.getElementById("filter-end-date");
+  const applyBtn = document.getElementById("apply-filter-btn");
+  const clearBtn = document.getElementById("clear-filter-btn");
+  const listContainer = document.getElementById("expense-list-container");
+  const noMsg = document.getElementById("no-expenses-message");
+
+  const newExpenseBtn = document.getElementById("new-expense-btn");
+  const newModal = document.getElementById("new-expense-modal");
+  const newAmount = document.getElementById("new-amount");
+  const newCategory = document.getElementById("new-category");
+  const newDate = document.getElementById("new-date");
+  const newDescription = document.getElementById("new-description");
+  const saveNewBtn = document.getElementById("save-new-btn");
+  const cancelNewBtn = document.getElementById("cancel-new-btn");
+
+  const editModal = document.getElementById("edit-expense-modal");
+  const editAmount = document.getElementById("edit-amount");
+  const editCategory = document.getElementById("edit-category");
+  const editDate = document.getElementById("edit-date");
+  const editDescription = document.getElementById("edit-description");
+  const saveEditBtn = document.getElementById("save-edit-btn");
+  const cancelEditBtn = document.getElementById("cancel-edit-btn");
+
+  const toast = document.getElementById("toast");
+
+  let currentEditId = null;
+
+  function showToast(message, type = "success") {
+    toast.textContent = message;
+    toast.className = `fixed bottom-5 right-5 px-4 py-2 rounded text-white shadow-lg bg-${type === "error" ? "red" : "green"}-600`;
+    toast.classList.remove("hidden");
+    setTimeout(() => toast.classList.add("hidden"), 2500);
+  }
+
+  function getCategoryDetails(categoryName) {
+    return userCategories.find(c => c.name === categoryName) || { icon: "❓", color: "bg-gray-200" };
+  }
+
+  function saveExpenses() {
+    localStorage.setItem(expensesKey, JSON.stringify(userExpenses));
+    renderExpenses();
+  }
+
+  function populateCategories() {
+    filterCategory.innerHTML = '<option value="">All Categories</option>';
+    newCategory.innerHTML = '';
+    editCategory.innerHTML = '';
+    userCategories.forEach(c => {
+      const optionFilter = new Option(`${c.icon} ${c.name}`, c.name);
+      const optionNew = new Option(`${c.icon} ${c.name}`, c.name);
+      const optionEdit = new Option(`${c.icon} ${c.name}`, c.name);
+      filterCategory.add(optionFilter);
+      newCategory.add(optionNew);
+      editCategory.add(optionEdit);
+    });
+  }
+
+  // Format date nicely like "June 15, 2025"
+  function formatDate(dateStr) {
+    if (!dateStr) return "";
+    const options = { year: 'numeric', month: 'long', day: 'numeric' };
+    const d = new Date(dateStr + "T00:00:00"); // prevent timezone issues
+    return d.toLocaleDateString(undefined, options);
+  }
+
+  function renderExpenses() {
+    listContainer.innerHTML = "";
+    noMsg.classList.add("hidden");
+
+    let filtered = [...userExpenses];
+
+    const cat = filterCategory.value;
+    const start = startDateInput.value ? new Date(startDateInput.value) : null;
+    const end = endDateInput.value ? new Date(endDateInput.value) : null;
+
+    if (cat) filtered = filtered.filter(e => e.category === cat);
+    if (start || end) {
+      filtered = filtered.filter(e => {
+        const d = new Date(e.date);
+        if (start && d < start) return false;
+        if (end && d > end) return false;
+        return true;
+      });
+    }
+
+    if (filtered.length === 0) {
+      noMsg.classList.remove("hidden");
+      return;
+    }
+
+    filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    filtered.forEach(exp => {
+      const details = getCategoryDetails(exp.category);
+
+      const div = document.createElement("div");
+      div.className = "bg-white p-4 rounded shadow flex justify-between items-center";
+      div.dataset.id = exp.id;
+      div.innerHTML = `
+        <div>
+          <p class="font-semibold text-gray-800">${escapeHtml(exp.description) || "No Description"}</p>
+          <p class="text-sm text-gray-600">${details.icon} ${exp.category} · ${formatDate(exp.date)}</p>
+        </div>
+        <div class="flex items-center space-x-3">
+          <p class="font-bold text-green-600">$${parseFloat(exp.amount).toFixed(2)}</p>
+          <button class="text-yellow-600 hover:text-yellow-800 edit-btn" aria-label="Edit expense"><i class="fas fa-edit"></i></button>
+          <button class="text-red-600 hover:text-red-800 delete-btn" aria-label="Delete expense"><i class="fas fa-trash-alt"></i></button>
+        </div>
+      `;
+      listContainer.appendChild(div);
+    });
+
+    // Add event listeners for edit/delete
+    listContainer.querySelectorAll(".edit-btn").forEach(button => {
+      button.addEventListener("click", (e) => {
+        const id = e.target.closest("div[data-id]").dataset.id;
+        openEditModal(id);
+      });
+    });
+
+    listContainer.querySelectorAll(".delete-btn").forEach(button => {
+      button.addEventListener("click", (e) => {
+        const id = e.target.closest("div[data-id]").dataset.id;
+        deleteExpenseById(id);
+      });
+    });
+  }
+
+  function openEditModal(id) {
+    const exp = userExpenses.find(e => e.id === id);
+    if (!exp) return;
+    currentEditId = id;
+    editAmount.value = exp.amount;
+    editCategory.value = exp.category;
+    editDate.value = exp.date;
+    editDescription.value = exp.description || "";
+    editModal.classList.remove("hidden");
+  }
+
+  function deleteExpenseById(id) {
+    if (confirm("Delete this expense?")) {
+      userExpenses = userExpenses.filter(e => e.id !== id);
+      saveExpenses();
+      showToast("Expense deleted.");
+    }
+  }
+
+  // Escape HTML to prevent XSS in description
+  function escapeHtml(text) {
+    if (!text) return "";
+    return text.replace(/[&<>"']/g, function(m) {
+      return ({
+        '&': "&amp;",
+        '<': "&lt;",
+        '>': "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      })[m];
+    });
+  }
+
+  // New Expense Modal Handlers
+  newExpenseBtn.addEventListener("click", () => {
+    newAmount.value = "";
+    newCategory.value = userCategories.length ? userCategories[0].name : "";
+    newDate.valueAsDate = new Date();
+    newDescription.value = "";
+    newModal.classList.remove("hidden");
+  });
+
+  cancelNewBtn.addEventListener("click", () => {
+    newModal.classList.add("hidden");
+  });
+
+  saveNewBtn.addEventListener("click", () => {
+    const amount = parseFloat(newAmount.value);
+    const category = newCategory.value;
+    const date = newDate.value;
+    const description = newDescription.value.trim();
+
+    if (!amount || amount <= 0 || !category || !date) {
+      showToast("Please fill all fields correctly!", "error");
+      return;
+    }
+
+    // Create new expense with unique id
+    const newExpense = {
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      amount,
+      category,
+      date,
+      description,
+    };
+
+    userExpenses.push(newExpense);
+    saveExpenses();
+    newModal.classList.add("hidden");
+    showToast("New expense added!");
+  });
+
+  // Edit Modal Handlers
+  cancelEditBtn.addEventListener("click", () => {
+    editModal.classList.add("hidden");
+    currentEditId = null;
+  });
+
+  saveEditBtn.addEventListener("click", () => {
+    if (!currentEditId) return;
+
+    const amount = parseFloat(editAmount.value);
+    const category = editCategory.value;
+    const date = editDate.value;
+    const description = editDescription.value.trim();
+
+    if (!amount || amount <= 0 || !category || !date) {
+      showToast("Please fill all fields correctly!", "error");
+      return;
+    }
+
+    const idx = userExpenses.findIndex(e => e.id === currentEditId);
+    if (idx === -1) {
+      showToast("Expense not found!", "error");
+      return;
+    }
+
+    userExpenses[idx] = {
+      id: currentEditId,
+      amount,
+      category,
+      date,
+      description,
+    };
+
+    saveExpenses();
+    editModal.classList.add("hidden");
+    currentEditId = null;
+    showToast("Expense updated!");
+  });
+
+  // Filters
+  applyBtn.addEventListener("click", renderExpenses);
+
+  clearBtn.addEventListener("click", () => {
+    filterCategory.value = "";
+    startDateInput.value = "";
+    endDateInput.value = "";
+    renderExpenses();
+  });
+
+  // Initialize
+  document.addEventListener("DOMContentLoaded", () => {
+    populateCategories();
+    renderExpenses();
+  });
+</script>
+
+</body>
+</html>

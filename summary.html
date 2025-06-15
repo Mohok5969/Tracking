@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Summary | Bobb Tracker</title>
+
+  <!-- Tailwind & FontAwesome -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="bg-gray-100 min-h-screen fade-in">
+
+<!-- Header -->
+<header class="bg-white shadow-sm py-4 px-6 flex justify-between items-center fixed top-0 left-0 w-full z-10">
+  <h1 class="text-2xl font-bold text-gray-800">Bobb Tracker</h1>
+
+  <!-- Mobile menu toggle -->
+  <button id="menu-toggle" class="md:hidden text-blue-600 text-2xl focus:outline-none">
+    <i class="fas fa-bars"></i>
+  </button>
+
+  <!-- Navigation -->
+  <nav id="main-nav" class="hidden md:flex md:space-x-6 absolute md:relative top-16 right-4 md:top-0 md:right-0 bg-white md:bg-transparent shadow md:shadow-none rounded-lg md:rounded-none p-4 md:p-0 z-20 text-blue-600 font-semibold">
+    <a href="home.html" class="block py-2 md:py-0 hover:text-blue-800"><i class="fas fa-home mr-1"></i>Home</a>
+    <a href="summary.html" class="block py-2 md:py-0 hover:text-blue-800"><i class="fas fa-chart-pie mr-1"></i>Summary</a>
+    <a href="expenses.html" class="block py-2 md:py-0 hover:text-blue-800"><i class="fas fa-money-bill-wave mr-1"></i>All Expenses</a>
+    <a href="settings.html" class="block py-2 md:py-0 hover:text-blue-800"><i class="fas fa-cog mr-1"></i>Settings</a>
+  </nav>
+</header>
+
+<!-- Main -->
+<main class="container mx-auto px-4 pt-24 pb-10">
+  <h1 class="text-2xl font-bold mb-6 text-gray-800">Expense Summary by Category</h1>
+
+  <!-- Summary List -->
+  <ul id="summary-list" class="space-y-4 animate-fade-in-up"></ul>
+
+  <!-- Overall Total -->
+  <div class="bg-white mt-8 p-6 rounded-lg shadow text-center animate-fade-in-up">
+    <h2 class="text-xl font-semibold mb-2 text-gray-700">Overall Total Expenses</h2>
+    <p id="overall-total" class="text-4xl font-extrabold text-green-600">$0.00</p>
+  </div>
+</main>
+
+<!-- Scripts -->
+<script type="module">
+  import { getCurrentUser } from './auth.js';
+  import { getCategoryDetails } from './script.js';
+
+  // Auth check
+  const user = getCurrentUser();
+  if (!user) window.location.href = "index.html";
+
+  // Load expenses
+  const expenses = JSON.parse(localStorage.getItem(`${user}_expenses`) || "[]");
+  const summary = {};
+  let overallTotal = 0;
+
+  expenses.forEach(({ category, amount }) => {
+    const numericAmount = parseFloat(amount) || 0;
+    const categoryName = category || 'Uncategorized';
+    summary[categoryName] = (summary[categoryName] || 0) + numericAmount;
+    overallTotal += numericAmount;
+  });
+
+  const list = document.getElementById("summary-list");
+  if (Object.keys(summary).length === 0) {
+    list.innerHTML = '<p class="text-center text-gray-600">No expenses recorded yet.</p>';
+  } else {
+    let html = '';
+    for (const [catName, total] of Object.entries(summary)) {
+      const { icon = '', color = '' } = getCategoryDetails(catName);
+      html += `
+        <li class="bg-white p-4 rounded-lg shadow-md flex justify-between items-center ${color}">
+          <span class="text-lg font-medium text-gray-800">${icon} <span class="ml-2">${catName}</span></span>
+          <span class="text-xl font-bold text-blue-600">$${total.toFixed(2)}</span>
+        </li>`;
+    }
+    list.innerHTML = html;
+  }
+
+  document.getElementById("overall-total").textContent = `$${overallTotal.toFixed(2)}`;
+</script>
+
+<!-- Mobile nav toggle -->
+<script>
+  document.getElementById('menu-toggle').addEventListener('click', () => {
+    document.getElementById('main-nav').classList.toggle('hidden');
+  });
+</script>
+
+</body>
+</html>

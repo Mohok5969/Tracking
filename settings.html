@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8" />
+  <title>Settings | Budget Monthly</title>
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+  />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 12px 20px;
+      background-color: #4ade80;
+      color: white;
+      border-radius: 6px;
+      font-weight: 600;
+      display: none;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+      z-index: 100;
+    }
+    .toast.show { display: block; }
+  </style>
+</head>
+<body class="bg-gray-100 p-6">
+
+<!-- 🔐 Redirect to login if not authenticated -->
+<script type="module">
+  import { getCurrentUser } from './Auth.js';
+  if (!getCurrentUser()) window.location.href = "index.html";
+</script>
+
+<!-- 📌 Responsive Header -->
+<header
+  class="bg-white shadow-sm py-4 px-6 flex justify-between items-center fixed top-0 left-0 w-full z-20"
+>
+  <h1 class="text-2xl font-bold text-gray-800">Bobb Tracker</h1>
+
+  <!-- Hamburger for mobile -->
+  <button
+    id="menu-toggle"
+    class="sm:hidden text-gray-700 focus:outline-none"
+    aria-label="Toggle menu"
+  >
+    <svg
+      class="w-7 h-7"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      viewBox="0 0 24 24"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        d="M4 6h16M4 12h16M4 18h16"
+      ></path>
+    </svg>
+  </button>
+
+  <nav
+    id="nav-menu"
+    class="space-x-4 text-blue-600 font-semibold hidden sm:flex sm:items-center"
+  >
+    <a href="home.html" class="hover:text-blue-800 flex items-center gap-1"
+      ><i class="fas fa-home"></i> Home</a
+    >
+    <a href="summary.html" class="hover:text-blue-800 flex items-center gap-1"
+      ><i class="fas fa-chart-pie"></i> Summary</a
+    >
+    <a href="expenses.html" class="hover:text-blue-800 flex items-center gap-1"
+      ><i class="fas fa-money-bill-wave"></i> All Expenses</a
+    >
+    <a href="settings.html" class="hover:text-blue-800 flex items-center gap-1"
+      ><i class="fas fa-cog"></i> Settings</a
+    >
+  </nav>
+</header>
+
+<!-- 🔧 Main Content -->
+<main class="container mx-auto pt-24">
+  <h1 class="text-3xl font-bold mb-6 text-gray-800">Settings</h1>
+
+  <!-- ⚙️ Account Settings Link -->
+  <div
+    id="main-settings-menu"
+    class="space-y-4"
+  >
+    <div
+      id="account-settings-link"
+      class="flex justify-between items-center p-4 bg-white rounded-lg shadow-sm cursor-pointer hover:shadow-md transition-transform hover:scale-[1.01]"
+    >
+      <h3 class="text-lg font-medium text-gray-800">
+        <i class="fas fa-user-circle mr-3 text-blue-500"></i>Account Settings
+      </h3>
+      <i class="fas fa-chevron-right text-gray-500"></i>
+    </div>
+
+    <!-- 🔄 Reset & Logout Buttons -->
+    <div class="flex flex-col sm:flex-row gap-4 mt-6">
+      <button
+        id="reset-data-btn"
+        class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded transition"
+      >
+        <i class="fas fa-redo-alt mr-2"></i>Reset My Data
+      </button>
+      <button
+        id="logout-btn"
+        class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded transition"
+      >
+        <i class="fas fa-sign-out-alt mr-2"></i>Logout
+      </button>
+    </div>
+  </div>
+
+  <!-- Future Subsections Placeholder -->
+  <div id="settings-sub-sections" class="mt-8"></div>
+</main>
+
+<!-- 🔔 Toast -->
+<div id="toast" class="toast">Toast Message</div>
+
+<!-- 🧠 Logic -->
+<script type="module">
+  import { getCurrentUser, logout } from './Auth.js';
+  import { showToast } from './script.js';
+
+  const user = getCurrentUser();
+  const logoutBtn = document.getElementById('logout-btn');
+  const resetDataBtn = document.getElementById('reset-data-btn');
+
+  // 🔓 Logout button
+  logoutBtn.addEventListener('click', () => {
+    logout();
+    showToast("You have been logged out.", "success");
+    setTimeout(() => window.location.href = 'index.html', 1200);
+  });
+
+  // ♻️ Reset Data button
+  resetDataBtn.addEventListener('click', () => {
+    if (
+      confirm(
+        "Are you sure you want to delete all your data? This cannot be undone."
+      )
+    ) {
+      localStorage.removeItem(`${user}_expenses`);
+      localStorage.removeItem(`${user}_categories`);
+      localStorage.removeItem(`${user}_profile`);
+      showToast("All your data has been reset.");
+      setTimeout(() => (window.location.href = "home.html"), 1500);
+    }
+  });
+</script>
+
+<!-- Hamburger toggle script -->
+<script>
+  const menuToggleBtn = document.getElementById('menu-toggle');
+  const navMenu = document.getElementById('nav-menu');
+
+  menuToggleBtn.addEventListener('click', () => {
+    navMenu.classList.toggle('hidden');
+  });
+</script>
+
+</body>
+</html>
